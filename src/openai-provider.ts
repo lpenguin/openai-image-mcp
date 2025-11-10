@@ -1,4 +1,49 @@
 import OpenAI from 'openai';
+import * as fs from 'fs';
+import * as path from 'path';
+import axios from 'axios';
+
+// gpt-image-1 specific parameters
+export interface GptImage1Options {
+  model: 'gpt-image-1';
+  n?: number;
+  size?: '1024x1024' | '1536x1024' | '1024x1536' | 'auto';
+  quality?: 'low' | 'medium' | 'high' | 'auto';
+  background?: 'transparent' | 'opaque' | 'auto';
+  moderation?: 'low' | 'auto';
+  output_compression?: number; // 0-100
+  output_format?: 'png' | 'jpeg' | 'webp';
+  partial_images?: number; // 0-3
+  stream?: boolean;
+  user?: string;
+}
+
+// dall-e-3 specific parameters
+export interface DallE3Options {
+  model: 'dall-e-3';
+  n?: 1; // dall-e-3 only supports n=1
+  size?: '1024x1024' | '1792x1024' | '1024x1792';
+  quality?: 'hd' | 'standard';
+  style?: 'vivid' | 'natural';
+  response_format?: 'url' | 'b64_json';
+  user?: string;
+}
+
+// dall-e-2 specific parameters
+export interface DallE2Options {
+  model: 'dall-e-2';
+  n?: number; // 1-10
+  size?: '256x256' | '512x512' | '1024x1024';
+  response_format?: 'url' | 'b64_json';
+  user?: string;
+}
+
+export type ImageGenerationOptions = GptImage1Options | DallE3Options | DallE2Options;
+
+export interface ImageGenerationResult {
+  response: OpenAI.Images.ImagesResponse;
+  savedFiles: string[];
+}
 
 export class OpenAiProvider {
   private apiKey: string;
@@ -12,25 +57,65 @@ export class OpenAiProvider {
     });
   }
 
-  async generateImage(prompt: string, options: Partial<OpenAI.Images.ImageGenerateParams> = {}): Promise<OpenAI.Images.ImagesResponse> {
+  async generateImage(prompt: string, outputPath: string, options: ImageGenerationOptions): Promise<ImageGenerationResult> {
     try {
       console.error('OpenAI Provider - Generating image with options:', JSON.stringify(options, null, 2));
       console.error('Prompt:', prompt);
+      console.error('Output path:', outputPath);
       
-      const params: OpenAI.Images.ImageGenerateParams = {
-        model: options.model || "gpt-image-1",
-        prompt: prompt,
-        n: options.n || 1,
-        size: options.size || "1024x1024",
-        quality: options.quality || "standard",
-        response_format: options.response_format || "url",
-        ...(options.style && { style: options.style }),
-      };
+      const model = options.model;
+      
+      // Build parameters based on model type
+      let params: OpenAI.Images.ImageGenerateParams;
+      
+      if (model === "gpt-image-1") {
+        const gptOptions = options as GptImage1Options;
+        params = {
+          model: 'gpt-image-1',
+          prompt: prompt,
+          n: gptOptions.n,
+          size: gptOptions.size,
+          quality: gptOptions.quality,
+          background: gptOptions.background,
+          moderation: gptOptions.moderation,
+          output_compression: gptOptions.output_compression,
+          output_format: gptOptions.output_format,
+          partial_images: gptOptions.partial_images,
+          stream: gptOptions.stream,
+          user: gptOptions.user,
+        } as OpenAI.Images.ImageGenerateParams;
+      } else if (model === "dall-e-3") {
+        const dalle3Options = options as DallE3Options;
+        params = {
+          model: 'dall-e-3',
+          prompt: prompt,
+          n: 1, // dall-e-3 only supports n=1
+          size: dalle3Options.size,
+          quality: dalle3Options.quality,
+          style: dalle3Options.style,
+          response_format: dalle3Options.response_format || 'url',
+          user: dalle3Options.user,
+        } as OpenAI.Images.ImageGenerateParams;
+      } else {
+        const dalle2Options = options as DallE2Options;
+        params = {
+          model: 'dall-e-2',
+          prompt: prompt,
+          n: dalle2Options.n,
+          size: dalle2Options.size,
+          response_format: dalle2Options.response_format || 'url',
+          user: dalle2Options.user,
+        } as OpenAI.Images.ImageGenerateParams;
+      }
       
       const response = await this.client.images.generate(params);
       
       console.error('OpenAI Provider - Image generated successfully');
-      return response;
+      
+      // Save images to disk
+      const savedFiles = await this.saveImages(response, outputPath, model);
+      
+      return { response, savedFiles };
     } catch (error) {
       console.error('Error generating image:', (error as Error).message);
       if ((error as any).response) {
@@ -38,5 +123,47 @@ export class OpenAiProvider {
       }
       throw error;
     }
+  }
+
+  private async saveImages(response: OpenAI.Images.ImagesResponse, outputPath: string, model: string): Promise<string[]> {
+    const savedFiles: string[] = [];
+    const outputDir = path.dirname(outputPath);
+    const outputExt = path.extname(outputPath);
+    const outputBasename = path.basename(outputPath, outputExt);
+    
+    // Create output directory if it doesn't exist
+    if (!fs.existsSync(outputDir)) {
+      fs.mkdirSync(outputDir, { recursive: true });
+    }
+    
+    for (let i = 0; i < response.data.length; i++) {
+      const imageData = response.data[i];
+      let filePath: string;
+      
+      if (response.data.length === 1) {
+        filePath = outputPath;
+      } else {
+        filePath = path.join(outputDir, `${outputBasename}_${i + 1}${outputExt}`);
+      }
+      
+      if (imageData.url) {
+        // Download from URL (dall-e-2, dall-e-3)
+        console.error(`Downloading image from URL to ${filePath}`);
+        const imageResponse = await axios.get(imageData.url, { responseType: 'arraybuffer' });
+        fs.writeFileSync(filePath, imageResponse.data);
+      } else if (imageData.b64_json) {
+        // Decode base64 (gpt-image-1 or when response_format=b64_json)
+        console.error(`Decoding base64 image to ${filePath}`);
+        const buffer = Buffer.from(imageData.b64_json, 'base64');
+        fs.writeFileSync(filePath, buffer);
+      } else {
+        throw new Error('Image data missing both url and b64_json');
+      }
+      
+      savedFiles.push(filePath);
+      console.error(`Image saved to: ${filePath}`);
+    }
+    
+    return savedFiles;
   }
 }

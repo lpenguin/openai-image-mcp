@@ -1,0 +1,19 @@
+{
+    "servers": {
+        "openai-image-mcp": {
+            "type": "stdio",
+            "command": "node",
+            "args": [
+                "dist/mcp-server.js"
+            ],
+            "env": {
+                "OPENAI_API_KEY": "${input:openaiApiKey}"
+            }
+        }
+    },
+    "inputs": [{
+        "type": "promptString",
+        "id": "openaiApiKey",
+        "description": "OpenAI API Key"
+    }]
+}
