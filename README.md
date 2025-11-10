@@ -1,4 +1,4 @@
-# DALL-E Image Generator MCP Server
+# OpenAI Image Generation MCP Server
 
 A TypeScript-based Model Context Protocol (MCP) server for generating images using OpenAI's image generation models (gpt-image-1, DALL-E 3, and DALL-E 2).
 
@@ -62,8 +62,38 @@ To use this as an MCP server with Claude, you need to add it to your MCP setting
 **Important**: Replace `"your_openai_api_key_here"` with your actual OpenAI API key. The MCP server will use this key to authenticate with the OpenAI API.
 
 Copy this configuration to your MCP settings file, typically located at:
-- VSCode: `~/.vscode-server/data/User/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json`
-- Claude Desktop: `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS)
+
+### VS Code
+
+For VS Code with the Cline extension, add the configuration to `cline_mcp_settings.json`:
+
+**Location**: `~/.vscode-server/data/User/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json`
+
+Use the **Input** format in JSON:
+
+```json
+{
+  "mcpServers": {
+    "image-generation": {
+      "command": "node",
+      "args": ["/absolute/path/to/openai-image-mcp/dist/mcp-server.js"],
+      "env": {
+        "OPENAI_API_KEY": "your_openai_api_key_here"
+      },
+      "disabled": false,
+      "autoApprove": []
+    }
+  }
+}
+```
+
+**Important**: 
+- Replace `/absolute/path/to/openai-image-mcp` with the actual absolute path to your cloned repository
+- Replace `"your_openai_api_key_here"` with your actual OpenAI API key
+
+### Claude Desktop
+
+**Location**: `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS)
 
 ### API Key Configuration
 
