@@ -13,8 +13,6 @@ export interface GptImage1Options {
   moderation?: 'low' | 'auto';
   output_compression?: number; // 0-100
   output_format?: 'png' | 'jpeg' | 'webp';
-  partial_images?: number; // 0-3
-  stream?: boolean;
   user?: string;
 }
 
@@ -25,7 +23,6 @@ export interface DallE3Options {
   size?: '1024x1024' | '1792x1024' | '1024x1792';
   quality?: 'hd' | 'standard';
   style?: 'vivid' | 'natural';
-  response_format?: 'url' | 'b64_json';
   user?: string;
 }
 
@@ -34,7 +31,6 @@ export interface DallE2Options {
   model: 'dall-e-2';
   n?: number; // 1-10
   size?: '256x256' | '512x512' | '1024x1024';
-  response_format?: 'url' | 'b64_json';
   user?: string;
 }
 
@@ -80,8 +76,7 @@ export class OpenAiProvider {
           moderation: gptOptions.moderation,
           output_compression: gptOptions.output_compression,
           output_format: gptOptions.output_format,
-          partial_images: gptOptions.partial_images,
-          stream: gptOptions.stream,
+          response_format: 'b64_json', // Always use base64 since we're saving to file
           user: gptOptions.user,
         } as OpenAI.Images.ImageGenerateParams;
       } else if (model === "dall-e-3") {
@@ -93,7 +88,7 @@ export class OpenAiProvider {
           size: dalle3Options.size,
           quality: dalle3Options.quality,
           style: dalle3Options.style,
-          response_format: dalle3Options.response_format || 'url',
+          response_format: 'b64_json', // Always use base64 since we're saving to file
           user: dalle3Options.user,
         } as OpenAI.Images.ImageGenerateParams;
       } else {
@@ -103,7 +98,7 @@ export class OpenAiProvider {
           prompt: prompt,
           n: dalle2Options.n,
           size: dalle2Options.size,
-          response_format: dalle2Options.response_format || 'url',
+          response_format: 'b64_json', // Always use base64 since we're saving to file
           user: dalle2Options.user,
         } as OpenAI.Images.ImageGenerateParams;
       }
@@ -146,18 +141,13 @@ export class OpenAiProvider {
         filePath = path.join(outputDir, `${outputBasename}_${i + 1}${outputExt}`);
       }
       
-      if (imageData.url) {
-        // Download from URL (dall-e-2, dall-e-3)
-        console.error(`Downloading image from URL to ${filePath}`);
-        const imageResponse = await axios.get(imageData.url, { responseType: 'arraybuffer' });
-        fs.writeFileSync(filePath, imageResponse.data);
-      } else if (imageData.b64_json) {
-        // Decode base64 (gpt-image-1 or when response_format=b64_json)
+      // All images are now base64 encoded
+      if (imageData.b64_json) {
         console.error(`Decoding base64 image to ${filePath}`);
         const buffer = Buffer.from(imageData.b64_json, 'base64');
         fs.writeFileSync(filePath, buffer);
       } else {
-        throw new Error('Image data missing both url and b64_json');
+        throw new Error('Image data missing b64_json');
       }
       
       savedFiles.push(filePath);

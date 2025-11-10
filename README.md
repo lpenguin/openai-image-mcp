@@ -105,16 +105,77 @@ The MCP server requires an OpenAI API key to function. There are two ways to pro
 
 ## Usage
 
-Once the MCP server is configured in Claude, you can use the `generate_image` tool to create images based on text prompts.
+Once the MCP server is configured in Claude, you can use one of the three image generation tools to create images based on text prompts. Each tool is optimized for a specific OpenAI model.
 
-## Parameters
+## Available Tools
 
-The `generate_image` tool accepts the following parameters:
+### 1. `generate_image_gpt` - GPT-Image-1 Model
 
-- `prompt` (required): A text description of the desired image
-- `model` (optional): The model to use. Options: "gpt-image-1", "dall-e-3" or "dall-e-2". Default is "gpt-image-1"
-- `n` (optional): Number of images to generate (1-10). Default is 1
-- `size` (optional): Image size. Options: "1024x1024", "1792x1024", "1024x1792", "512x512", or "256x256". Default is "1024x1024"
-- `quality` (optional): Image quality. Options: "standard" or "hd". Default is "standard"
-- `style` (optional): Image style. Options: "vivid" or "natural"
-- `response_format` (optional): Format of the response. Options: "url" or "b64_json". Default is "url"
+Generate images using OpenAI's gpt-image-1 model with advanced features like transparency and custom output formats.
+
+**Parameters:**
+- `prompt` (required): A text description of the desired image (max 32,000 characters)
+- `output` (required): File path where the generated image should be saved (e.g., `/path/to/image.png`)
+- `size` (optional): Image size. Options: "1024x1024", "1536x1024", "1024x1536", "auto". Default: "auto"
+- `quality` (optional): Image quality. Options: "low", "medium", "high", "auto". Default: "auto"
+- `background` (optional): Background transparency. Options: "transparent", "opaque", "auto". Default: "auto"
+- `output_format` (optional): Output image format. Options: "png", "jpeg", "webp". Default: "png"
+- `output_compression` (optional): Compression level (0-100) for webp/jpeg formats. Default: 100
+- `moderation` (optional): Content moderation level. Options: "low", "auto". Default: "auto"
+- `n` (optional): Number of images to generate (1-10). Default: 1
+
+### 2. `generate_image_dalle3` - DALL-E 3 Model
+
+Generate high-quality images using OpenAI's DALL-E 3 model with style control.
+
+**Parameters:**
+- `prompt` (required): A text description of the desired image (max 4,000 characters)
+- `output` (required): File path where the generated image should be saved
+- `size` (optional): Image size. Options: "1024x1024", "1792x1024", "1024x1792". Default: "1024x1024"
+- `quality` (optional): Image quality. Options: "standard", "hd". Default: "standard"
+- `style` (optional): Image style. Options: "vivid" (hyper-real and dramatic), "natural" (more natural, less hyper-real). Default: "vivid"
+
+**Note:** DALL-E 3 can only generate 1 image at a time (n is always 1).
+
+### 3. `generate_image_dalle2` - DALL-E 2 Model
+
+Generate images using OpenAI's DALL-E 2 model. Fast and cost-effective option.
+
+**Parameters:**
+- `prompt` (required): A text description of the desired image (max 1,000 characters)
+- `output` (required): File path where the generated image should be saved
+- `size` (optional): Image size. Options: "256x256", "512x512", "1024x1024". Default: "1024x1024"
+- `n` (optional): Number of images to generate (1-10). Default: 1
+
+## Examples
+
+### Generate a logo with transparency (GPT-Image-1)
+```
+generate_image_gpt(
+  prompt="A minimalist geometric logo with circles and triangles",
+  output="/path/to/logo.png",
+  background="transparent",
+  output_format="png",
+  quality="high"
+)
+```
+
+### Generate a high-quality artistic image (DALL-E 3)
+```
+generate_image_dalle3(
+  prompt="A peaceful zen garden with raked sand and carefully placed stones",
+  output="/path/to/zen_garden.png",
+  quality="hd",
+  style="natural"
+)
+```
+
+### Generate multiple variations (DALL-E 2)
+```
+generate_image_dalle2(
+  prompt="A vintage robot reading a newspaper",
+  output="/path/to/robot.png",
+  n=3,
+  size="512x512"
+)
+```

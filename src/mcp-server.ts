@@ -119,18 +119,6 @@ class ImageGenerationServer {
                 enum: ['png', 'jpeg', 'webp'],
                 default: 'png',
               },
-              partial_images: {
-                type: 'integer',
-                description: 'Number of partial images (0-3) for streaming',
-                minimum: 0,
-                maximum: 3,
-                default: 0,
-              },
-              stream: {
-                type: 'boolean',
-                description: 'Enable streaming mode',
-                default: false,
-              },
               user: {
                 type: 'string',
                 description: 'Unique identifier for your end-user (optional)',
@@ -171,12 +159,6 @@ class ImageGenerationServer {
                 enum: ['vivid', 'natural'],
                 default: 'vivid',
               },
-              response_format: {
-                type: 'string',
-                description: 'Format in which the image is returned',
-                enum: ['url', 'b64_json'],
-                default: 'url',
-              },
               user: {
                 type: 'string',
                 description: 'Unique identifier for your end-user (optional)',
@@ -211,12 +193,6 @@ class ImageGenerationServer {
                 description: 'Size of the generated image',
                 enum: ['256x256', '512x512', '1024x1024'],
                 default: '1024x1024',
-              },
-              response_format: {
-                type: 'string',
-                description: 'Format in which the image is returned',
-                enum: ['url', 'b64_json'],
-                default: 'url',
               },
               user: {
                 type: 'string',
@@ -267,8 +243,6 @@ class ImageGenerationServer {
         moderation: args.moderation,
         output_compression: args.output_compression,
         output_format: args.output_format,
-        partial_images: args.partial_images,
-        stream: args.stream,
         user: args.user,
       };
 
@@ -321,7 +295,6 @@ class ImageGenerationServer {
         size: args.size as any,
         quality: args.quality as any,
         style: args.style,
-        response_format: args.response_format,
         user: args.user,
       };
 
@@ -372,7 +345,6 @@ class ImageGenerationServer {
         model: 'dall-e-2',
         n: args.n,
         size: args.size as any,
-        response_format: args.response_format,
         user: args.user,
       };
 
