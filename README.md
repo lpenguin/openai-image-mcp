@@ -86,5 +86,5 @@ The `generate_image` tool accepts the following parameters:
 - `n` (optional): Number of images to generate (1-10). Default is 1
 - `size` (optional): Image size. Options: "1024x1024", "1792x1024", "1024x1792", "512x512", or "256x256". Default is "1024x1024"
 - `quality` (optional): Image quality. Options: "standard" or "hd". Default is "standard"
-- `style` (optional): Image style. Options: "vivid" or "natural". Default is "vivid"
+- `style` (optional): Image style. Options: "vivid" or "natural"
 - `response_format` (optional): Format of the response. Options: "url" or "b64_json". Default is "url"

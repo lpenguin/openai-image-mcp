@@ -23,8 +23,8 @@ export class OpenAiProvider {
         n: options.n || 1,
         size: options.size || "1024x1024",
         quality: options.quality || "standard",
-        style: options.style || "vivid",
         response_format: options.response_format || "url",
+        ...(options.style && { style: options.style }),
       };
       
       const response = await this.client.images.generate(params);

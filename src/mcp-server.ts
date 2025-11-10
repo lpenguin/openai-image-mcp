@@ -100,7 +100,6 @@ class ImageGenerationServer {
                 type: 'string',
                 description: 'Style of the generated image',
                 enum: ['vivid', 'natural'],
-                default: 'vivid',
               },
               response_format: {
                 type: 'string',
