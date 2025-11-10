@@ -1,6 +1,6 @@
 # DALL-E Image Generator MCP Server
 
-A TypeScript-based Model Context Protocol (MCP) server for generating images using OpenAI's DALL-E 3 model.
+A TypeScript-based Model Context Protocol (MCP) server for generating images using OpenAI's image generation models (gpt-image-1, DALL-E 3, and DALL-E 2).
 
 ## Setup
 
@@ -82,7 +82,7 @@ Once the MCP server is configured in Claude, you can use the `generate_image` to
 The `generate_image` tool accepts the following parameters:
 
 - `prompt` (required): A text description of the desired image
-- `model` (optional): The model to use. Options: "dall-e-3" or "dall-e-2". Default is "dall-e-3"
+- `model` (optional): The model to use. Options: "gpt-image-1", "dall-e-3" or "dall-e-2". Default is "dall-e-3"
 - `n` (optional): Number of images to generate (1-10). Default is 1
 - `size` (optional): Image size. Options: "1024x1024", "1792x1024", "1024x1792", "512x512", or "256x256". Default is "1024x1024"
 - `quality` (optional): Image quality. Options: "standard" or "hd". Default is "standard"
