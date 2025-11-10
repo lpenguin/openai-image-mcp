@@ -18,7 +18,7 @@ export class OpenAiProvider {
       console.error('Prompt:', prompt);
       
       const params: OpenAI.Images.ImageGenerateParams = {
-        model: options.model || "dall-e-3",
+        model: options.model || "gpt-image-1",
         prompt: prompt,
         n: options.n || 1,
         size: options.size || "1024x1024",
