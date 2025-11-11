@@ -58,11 +58,15 @@ export class OpenAiProvider {
   private apiKey: string;
   private client: OpenAI;
 
-  constructor(apiKey: string) {
+  constructor(apiKey: string, baseURL?: string) {
     this.apiKey = apiKey;
     console.error('OpenAI Provider - Initializing with API key:', this.apiKey);
+    if (baseURL) {
+      console.error('OpenAI Provider - Using custom base URL:', baseURL);
+    }
     this.client = new OpenAI({
-      apiKey: this.apiKey
+      apiKey: this.apiKey,
+      ...(baseURL && { baseURL })
     });
   }
 

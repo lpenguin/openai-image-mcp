@@ -21,11 +21,14 @@ if (!process.env.OPENAI_API_KEY) {
   process.exit(1);
 }
 
-// Validate API key format (basic check)
-if (!process.env.OPENAI_API_KEY.startsWith('sk-')) {
+// Validate API key format (basic check) - skip for test keys
+if (!process.env.OPENAI_API_KEY.startsWith('sk-') && !process.env.OPENAI_API_KEY.includes('test')) {
   console.error('WARNING: The OPENAI_API_KEY does not appear to be in the expected format.');
   console.error('OpenAI API keys typically start with "sk-".');
 }
+
+// Optional: Use custom OpenAI API URL (useful for testing with mock servers)
+const baseURL = process.env.OPENAI_API_URL;
 
 class ImageGenerationServer {
   private server: Server;
@@ -45,7 +48,7 @@ class ImageGenerationServer {
     );
 
     // Initialize OpenAI provider
-    this.openAiProvider = new OpenAiProvider(process.env.OPENAI_API_KEY as string);
+    this.openAiProvider = new OpenAiProvider(process.env.OPENAI_API_KEY as string, baseURL);
 
     // Setup tool handlers
     this.setupToolHandlers();

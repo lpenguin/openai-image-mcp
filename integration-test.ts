@@ -29,7 +29,8 @@ interface MCPResponse {
 
 // Test configuration
 const TEST_OUTPUT_DIR = join(process.cwd(), 'test-outputs');
-const FAKE_API_KEY = "sk-test-api-key-for-integration-testing";
+const MOCK_API_URL = process.env.OPENAI_API_URL || "http://localhost:5002/v1";
+const FAKE_API_KEY = "test-api-key";
 
 let requestId = 1;
 
@@ -90,13 +91,14 @@ async function runTests(): Promise<void> {
   }
 
   // Start the MCP server
-  console.log("📦 Starting MCP server...");
+  console.log("📦 Starting MCP server with mock OpenAI API...");
   const serverPath = join(process.cwd(), 'dist', 'mcp-server.js');
   
   const child = spawn('node', [serverPath], {
     env: {
       ...process.env,
       OPENAI_API_KEY: FAKE_API_KEY,
+      OPENAI_API_URL: MOCK_API_URL,
     },
     stdio: ['pipe', 'pipe', 'pipe'],
   });
@@ -157,14 +159,16 @@ async function runTests(): Promise<void> {
     });
     const generateGptResponse = await sendMCPRequest(child, generateGptRequest);
     
-    // We expect this to fail with an auth error (invalid API key)
-    // but the protocol should work correctly
+    // With mock API, this should succeed
     if (generateGptResponse.error || 
         (generateGptResponse.result as { isError?: boolean })?.isError) {
-      console.log("✅ generate_image_gpt tool called (failed as expected with test API key)");
-      console.log(`   Error is expected: Invalid authentication or API key\n`);
+      console.log("⚠️  generate_image_gpt tool failed");
+      const content = (generateGptResponse.result as { content?: Array<{ text?: string }> })?.content;
+      if (content && content[0]?.text) {
+        console.log(`   Error: ${content[0].text.substring(0, 200)}\n`);
+      }
     } else {
-      console.log("⚠️  generate_image_gpt tool unexpectedly succeeded (shouldn't happen with test API key)\n");
+      console.log("✅ generate_image_gpt tool called successfully\n");
     }
 
     // Test 4: Call generate_image_gpt_mini tool
@@ -183,10 +187,9 @@ async function runTests(): Promise<void> {
     
     if (generateGptMiniResponse.error || 
         (generateGptMiniResponse.result as { isError?: boolean })?.isError) {
-      console.log("✅ generate_image_gpt_mini tool called (failed as expected with test API key)");
-      console.log(`   Error is expected: Invalid authentication or API key\n`);
+      console.log("⚠️  generate_image_gpt_mini tool failed\n");
     } else {
-      console.log("⚠️  generate_image_gpt_mini tool unexpectedly succeeded\n");
+      console.log("✅ generate_image_gpt_mini tool called successfully\n");
     }
 
     // Test 5: Call generate_image_dalle3 tool
@@ -205,10 +208,9 @@ async function runTests(): Promise<void> {
     
     if (generateDalle3Response.error || 
         (generateDalle3Response.result as { isError?: boolean })?.isError) {
-      console.log("✅ generate_image_dalle3 tool called (failed as expected with test API key)");
-      console.log(`   Error is expected: Invalid authentication or API key\n`);
+      console.log("⚠️  generate_image_dalle3 tool failed\n");
     } else {
-      console.log("⚠️  generate_image_dalle3 tool unexpectedly succeeded\n");
+      console.log("✅ generate_image_dalle3 tool called successfully\n");
     }
 
     // Test 6: Call generate_image_dalle2 tool
@@ -226,10 +228,9 @@ async function runTests(): Promise<void> {
     
     if (generateDalle2Response.error || 
         (generateDalle2Response.result as { isError?: boolean })?.isError) {
-      console.log("✅ generate_image_dalle2 tool called (failed as expected with test API key)");
-      console.log(`   Error is expected: Invalid authentication or API key\n`);
+      console.log("⚠️  generate_image_dalle2 tool failed\n");
     } else {
-      console.log("⚠️  generate_image_dalle2 tool unexpectedly succeeded\n");
+      console.log("✅ generate_image_dalle2 tool called successfully\n");
     }
 
     // Test 7: Test error handling with missing required parameters
@@ -249,13 +250,13 @@ async function runTests(): Promise<void> {
       console.log("⚠️  Expected error for missing parameters but got success\n");
     }
 
-    console.log("🎉 All integration tests passed!");
-    console.log("\nNote: The tool calls are expected to fail with authentication errors");
-    console.log("since we're using a test API key. The tests verify that:");
+    console.log("🎉 All integration tests completed!");
+    console.log("\nThe tests verify that:");
     console.log("  1. The MCP protocol works correctly");
     console.log("  2. All tools are registered and discoverable");
     console.log("  3. Tool calls are properly routed");
     console.log("  4. Error handling works as expected");
+    console.log("  5. Mock API integration works (when OPENAI_API_URL is set)");
     
   } catch (error) {
     console.error("\n❌ Test failed:", error);
