@@ -50,6 +50,7 @@
     "@types/dotenv": "^8.2.3",
     "@types/express": "^5.0.1",
     "@types/node": "^22.14.1",
+    "standard-version": "^9.5.0",
     "typescript": "^5.8.3"
   }
 }
