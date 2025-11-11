@@ -2,7 +2,37 @@
 
 A TypeScript-based Model Context Protocol (MCP) server for generating images using OpenAI's image generation models (gpt-image-1, gpt-image-1-mini, DALL-E 3, and DALL-E 2).
 
-## Setup
+## Quick Start with npx
+
+The easiest way to use this MCP server is with npx (no installation required):
+
+```bash
+npx @lpenguin/openai-image-mcp
+```
+
+This will start the MCP server with stdio transport. You'll need to set the `OPENAI_API_KEY` environment variable:
+
+```bash
+OPENAI_API_KEY=your_api_key_here npx @lpenguin/openai-image-mcp
+```
+
+## Installation
+
+You can also install the package globally:
+
+```bash
+npm install -g @lpenguin/openai-image-mcp
+```
+
+Then run it with:
+
+```bash
+openai-image-mcp
+```
+
+## Development Setup
+
+For local development:
 
 1. Clone this repository
 2. Install dependencies:
@@ -34,7 +64,50 @@ npm run dev
 
 ## MCP Server Configuration
 
-To use this as an MCP server with Claude, you need to add it to your MCP settings configuration file. The `mcp-config.json` file in this repository provides a template:
+To use this as an MCP server with Claude or other MCP clients, you need to add it to your MCP settings configuration file.
+
+### Using npx (Recommended)
+
+The easiest way is to use npx directly in your MCP configuration:
+
+```json
+{
+  "mcpServers": {
+    "image-generation": {
+      "command": "npx",
+      "args": ["-y", "@lpenguin/openai-image-mcp"],
+      "env": {
+        "OPENAI_API_KEY": "your_openai_api_key_here"
+      },
+      "disabled": false,
+      "autoApprove": []
+    }
+  }
+}
+```
+
+### Using local installation
+
+If you have the package installed globally or locally, you can use the direct command:
+
+```json
+{
+  "mcpServers": {
+    "image-generation": {
+      "command": "openai-image-mcp",
+      "env": {
+        "OPENAI_API_KEY": "your_openai_api_key_here"
+      },
+      "disabled": false,
+      "autoApprove": []
+    }
+  }
+}
+```
+
+### Using from source (Development)
+
+For local development with the cloned repository:
 
 ```json
 {
@@ -62,7 +135,25 @@ VS Code has native MCP support. Add the configuration to your workspace or user 
 
 **Location**: `.vscode/mcp.json` (in your workspace root)
 
-Configuration format:
+**Using npx:**
+
+```json
+{
+  "mcpServers": {
+    "image-generation": {
+      "command": "npx",
+      "args": ["-y", "@lpenguin/openai-image-mcp"],
+      "env": {
+        "OPENAI_API_KEY": "your_openai_api_key_here"
+      },
+      "disabled": false,
+      "autoApprove": []
+    }
+  }
+}
+```
+
+**Using local installation:**
 
 ```json
 {
@@ -87,6 +178,8 @@ Configuration format:
 ### Claude Desktop
 
 **Location**: `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS)
+
+Use the npx configuration format shown above.
 
 ### API Key Configuration
 
