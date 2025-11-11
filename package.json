@@ -1,10 +1,10 @@
 {
-  "name": "dalle-image-generator",
+  "name": "@lpenguin/openai-image-mcp",
   "version": "1.0.0",
   "description": "MCP server for generating images using OpenAI's DALL-E 3",
   "main": "dist/mcp-server.js",
   "bin": {
-    "dalle-image-generator": "dist/mcp-server.js"
+    "openai-image-mcp": "dist/mcp-server.js"
   },
   "files": [
     "dist",

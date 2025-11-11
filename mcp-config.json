@@ -2,7 +2,7 @@
   "mcpServers": {
     "image-generation": {
       "command": "npx",
-      "args": ["-y", "dalle-image-generator"],
+      "args": ["-y", "@lpenguin/openai-image-mcp"],
       "env": {
         "OPENAI_API_KEY": "your_openai_api_key_here"
       },

@@ -7,13 +7,13 @@ A TypeScript-based Model Context Protocol (MCP) server for generating images usi
 The easiest way to use this MCP server is with npx (no installation required):
 
 ```bash
-npx dalle-image-generator
+npx @lpenguin/openai-image-mcp
 ```
 
 This will start the MCP server with stdio transport. You'll need to set the `OPENAI_API_KEY` environment variable:
 
 ```bash
-OPENAI_API_KEY=your_api_key_here npx dalle-image-generator
+OPENAI_API_KEY=your_api_key_here npx @lpenguin/openai-image-mcp
 ```
 
 ## Installation
@@ -21,13 +21,13 @@ OPENAI_API_KEY=your_api_key_here npx dalle-image-generator
 You can also install the package globally:
 
 ```bash
-npm install -g dalle-image-generator
+npm install -g @lpenguin/openai-image-mcp
 ```
 
 Then run it with:
 
 ```bash
-dalle-image-generator
+openai-image-mcp
 ```
 
 ## Development Setup
@@ -75,7 +75,7 @@ The easiest way is to use npx directly in your MCP configuration:
   "mcpServers": {
     "image-generation": {
       "command": "npx",
-      "args": ["-y", "dalle-image-generator"],
+      "args": ["-y", "@lpenguin/openai-image-mcp"],
       "env": {
         "OPENAI_API_KEY": "your_openai_api_key_here"
       },
@@ -94,7 +94,7 @@ If you have the package installed globally or locally, you can use the direct co
 {
   "mcpServers": {
     "image-generation": {
-      "command": "dalle-image-generator",
+      "command": "openai-image-mcp",
       "env": {
         "OPENAI_API_KEY": "your_openai_api_key_here"
       },
@@ -142,7 +142,7 @@ VS Code has native MCP support. Add the configuration to your workspace or user 
   "mcpServers": {
     "image-generation": {
       "command": "npx",
-      "args": ["-y", "dalle-image-generator"],
+      "args": ["-y", "@lpenguin/openai-image-mcp"],
       "env": {
         "OPENAI_API_KEY": "your_openai_api_key_here"
       },
