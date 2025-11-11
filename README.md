@@ -1,6 +1,6 @@
 # OpenAI Image Generation MCP Server
 
-A TypeScript-based Model Context Protocol (MCP) server for generating images using OpenAI's image generation models (gpt-image-1, DALL-E 3, and DALL-E 2).
+A TypeScript-based Model Context Protocol (MCP) server for generating images using OpenAI's image generation models (gpt-image-1, gpt-image-1-mini, DALL-E 3, and DALL-E 2).
 
 ## Setup
 
@@ -105,7 +105,7 @@ The MCP server requires an OpenAI API key to function. There are two ways to pro
 
 ## Usage
 
-Once the MCP server is configured in Claude, you can use one of the three image generation tools to create images based on text prompts. Each tool is optimized for a specific OpenAI model.
+Once the MCP server is configured in Claude, you can use one of the four image generation tools to create images based on text prompts. Each tool is optimized for a specific OpenAI model.
 
 ## Available Tools
 
@@ -124,7 +124,22 @@ Generate images using OpenAI's gpt-image-1 model with advanced features like tra
 - `moderation` (optional): Content moderation level. Options: "low", "auto". Default: "auto"
 - `n` (optional): Number of images to generate (1-10). Default: 1
 
-### 2. `generate_image_dalle3` - DALL-E 3 Model
+### 2. `generate_image_gpt_mini` - GPT-Image-1-Mini Model
+
+Generate images using OpenAI's gpt-image-1-mini model. Cost-efficient alternative to gpt-image-1 with the same advanced features like transparency and custom output formats.
+
+**Parameters:**
+- `prompt` (required): A text description of the desired image (max 32,000 characters)
+- `output` (required): File path where the generated image should be saved (e.g., `/path/to/image.png`)
+- `size` (optional): Image size. Options: "1024x1024", "1536x1024", "1024x1536", "auto". Default: "auto"
+- `quality` (optional): Image quality. Options: "low", "medium", "high", "auto". Default: "auto"
+- `background` (optional): Background transparency. Options: "transparent", "opaque", "auto". Default: "auto"
+- `output_format` (optional): Output image format. Options: "png", "jpeg", "webp". Default: "png"
+- `output_compression` (optional): Compression level (0-100) for webp/jpeg formats. Default: 100
+- `moderation` (optional): Content moderation level. Options: "low", "auto". Default: "auto"
+- `n` (optional): Number of images to generate (1-10). Default: 1
+
+### 3. `generate_image_dalle3` - DALL-E 3 Model
 
 Generate high-quality images using OpenAI's DALL-E 3 model with style control.
 
@@ -137,7 +152,7 @@ Generate high-quality images using OpenAI's DALL-E 3 model with style control.
 
 **Note:** DALL-E 3 can only generate 1 image at a time (n is always 1).
 
-### 3. `generate_image_dalle2` - DALL-E 2 Model
+### 4. `generate_image_dalle2` - DALL-E 2 Model
 
 Generate images using OpenAI's DALL-E 2 model. Fast and cost-effective option.
 
@@ -157,6 +172,16 @@ generate_image_gpt(
   background="transparent",
   output_format="png",
   quality="high"
+)
+```
+
+### Generate a cost-efficient image (GPT-Image-1-Mini)
+```
+generate_image_gpt_mini(
+  prompt="A serene landscape with mountains and a lake at sunset",
+  output="/path/to/landscape.png",
+  quality="medium",
+  size="1024x1024"
 )
 ```
 

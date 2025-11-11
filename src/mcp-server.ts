@@ -128,6 +128,72 @@ class ImageGenerationServer {
           },
         },
         {
+          name: 'generate_image_gpt_mini',
+          description: 'Generate an image using OpenAI\'s gpt-image-1-mini model and save it to a file. Cost-efficient alternative to gpt-image-1 with same features: transparency, custom output formats, and high-quality generation.',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              prompt: {
+                type: 'string',
+                description: 'A text description of the desired image (max 32000 characters)',
+              },
+              output: {
+                type: 'string',
+                description: 'File path where the generated image should be saved (e.g., /path/to/image.png)',
+              },
+              n: {
+                type: 'integer',
+                description: 'Number of images to generate (1-10)',
+                minimum: 1,
+                maximum: 10,
+                default: 1,
+              },
+              size: {
+                type: 'string',
+                description: 'Size of the generated image',
+                enum: ['1024x1024', '1536x1024', '1024x1536', 'auto'],
+                default: 'auto',
+              },
+              quality: {
+                type: 'string',
+                description: 'Quality of the generated image',
+                enum: ['low', 'medium', 'high', 'auto'],
+                default: 'auto',
+              },
+              background: {
+                type: 'string',
+                description: 'Background transparency setting',
+                enum: ['transparent', 'opaque', 'auto'],
+                default: 'auto',
+              },
+              moderation: {
+                type: 'string',
+                description: 'Content moderation level',
+                enum: ['low', 'auto'],
+                default: 'auto',
+              },
+              output_compression: {
+                type: 'integer',
+                description: 'Compression level (0-100) for webp/jpeg formats',
+                minimum: 0,
+                maximum: 100,
+                default: 100,
+              },
+              output_format: {
+                type: 'string',
+                description: 'Output image format',
+                enum: ['png', 'jpeg', 'webp'],
+                default: 'png',
+              },
+              user: {
+                type: 'string',
+                description: 'Unique identifier for your end-user (optional)',
+              },
+            },
+            required: ['prompt', 'output'],
+          },
+        },
+        {
           name: 'generate_image_dalle3',
           description: 'Generate an image using OpenAI\'s DALL-E 3 model and save it to a file. Best quality and most advanced model with style control.',
           inputSchema: {
@@ -211,6 +277,8 @@ class ImageGenerationServer {
       // Route to appropriate handler based on tool name
       if (toolName === 'generate_image_gpt') {
         return this.handleGptImageGeneration(request.params.arguments);
+      } else if (toolName === 'generate_image_gpt_mini') {
+        return this.handleGptImageMiniGeneration(request.params.arguments);
       } else if (toolName === 'generate_image_dalle3') {
         return this.handleDalle3Generation(request.params.arguments);
       } else if (toolName === 'generate_image_dalle2') {
@@ -259,6 +327,61 @@ class ImageGenerationServer {
             text: JSON.stringify({
               success: true,
               model: 'gpt-image-1',
+              savedFiles: result.savedFiles,
+              response: result.response,
+            }, null, 2),
+          },
+        ],
+      };
+    } catch (error) {
+      console.error('Error generating image:', error);
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `Error generating image: ${(error as Error).message || 'Unknown error'}`,
+          },
+        ],
+        isError: true,
+      };
+    }
+  }
+
+  private async handleGptImageMiniGeneration(args: any) {
+    // Validate required parameters
+    if (!args.prompt) {
+      throw new McpError(ErrorCode.InvalidParams, 'Prompt is required');
+    }
+    if (!args.output) {
+      throw new McpError(ErrorCode.InvalidParams, 'Output file path is required');
+    }
+
+    try {
+      const options: ImageGenerationOptions = {
+        model: 'gpt-image-1-mini',
+        n: args.n,
+        size: args.size as any,
+        quality: args.quality as any,
+        background: args.background,
+        moderation: args.moderation,
+        output_compression: args.output_compression,
+        output_format: args.output_format,
+        user: args.user,
+      };
+
+      console.error('Sending gpt-image-1-mini request to OpenAI');
+      console.error('Prompt:', args.prompt);
+      console.error('Output:', args.output);
+      
+      const result = await this.openAiProvider.generateImage(args.prompt, args.output, options);
+      
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({
+              success: true,
+              model: 'gpt-image-1-mini',
               savedFiles: result.savedFiles,
               response: result.response,
             }, null, 2),

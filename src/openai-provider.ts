@@ -16,6 +16,19 @@ export interface GptImage1Options {
   user?: string;
 }
 
+// gpt-image-1-mini specific parameters (same as gpt-image-1)
+export interface GptImage1MiniOptions {
+  model: 'gpt-image-1-mini';
+  n?: number;
+  size?: '1024x1024' | '1536x1024' | '1024x1536' | 'auto';
+  quality?: 'low' | 'medium' | 'high' | 'auto';
+  background?: 'transparent' | 'opaque' | 'auto';
+  moderation?: 'low' | 'auto';
+  output_compression?: number; // 0-100
+  output_format?: 'png' | 'jpeg' | 'webp';
+  user?: string;
+}
+
 // dall-e-3 specific parameters
 export interface DallE3Options {
   model: 'dall-e-3';
@@ -34,7 +47,7 @@ export interface DallE2Options {
   user?: string;
 }
 
-export type ImageGenerationOptions = GptImage1Options | DallE3Options | DallE2Options;
+export type ImageGenerationOptions = GptImage1Options | GptImage1MiniOptions | DallE3Options | DallE2Options;
 
 export interface ImageGenerationResult {
   response: OpenAI.Images.ImagesResponse;
@@ -64,10 +77,10 @@ export class OpenAiProvider {
       // Build parameters based on model type
       let params: OpenAI.Images.ImageGenerateParams;
       
-      if (model === "gpt-image-1") {
-        const gptOptions = options as GptImage1Options;
+      if (model === "gpt-image-1" || model === "gpt-image-1-mini") {
+        const gptOptions = options as GptImage1Options | GptImage1MiniOptions;
         params = {
-          model: 'gpt-image-1',
+          model: model,
           prompt: prompt,
           n: gptOptions.n,
           size: gptOptions.size,
