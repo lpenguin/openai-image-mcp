@@ -7,7 +7,8 @@
     "build": "tsc",
     "start": "node dist/mcp-server.js",
     "dev": "tsc && node dist/mcp-server.js",
-    "test": "tsc && node dist/test-mcp-server.js"
+    "test": "tsc && node dist/test-mcp-server.js",
+    "integration-test": "tsc && node dist/integration-test.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.10.1",
