@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.1.1](https://github.com/lpenguin/openai-image-mcp/compare/v1.1.0...v1.1.1) (2025-11-11)
+
+
+### Bug Fixes
+
+* update .gitignore and remove mcp.json configuration ([5f7d739](https://github.com/lpenguin/openai-image-mcp/commit/5f7d739bb6e5f696769d58d90557a7480d972088))
+
 ## 1.1.0 (2025-11-11)
 
 
