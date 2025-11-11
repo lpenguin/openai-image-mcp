@@ -1,8 +1,8 @@
 {
   "mcpServers": {
     "image-generation": {
-      "command": "node",
-      "args": ["dist/mcp-server.js"],
+      "command": "npx",
+      "args": ["-y", "dalle-image-generator"],
       "env": {
         "OPENAI_API_KEY": "your_openai_api_key_here"
       },
