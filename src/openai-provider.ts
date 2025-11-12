@@ -49,6 +49,22 @@ export interface DallE2Options {
 
 export type ImageGenerationOptions = GptImage1Options | GptImage1MiniOptions | DallE3Options | DallE2Options;
 
+function isGptImage1Options(options: ImageGenerationOptions): options is GptImage1Options {
+  return options.model === 'gpt-image-1';
+}
+
+function isGptImage1MiniOptions(options: ImageGenerationOptions): options is GptImage1MiniOptions {
+  return options.model === 'gpt-image-1-mini';
+}
+
+function isDallE3Options(options: ImageGenerationOptions): options is DallE3Options {
+  return options.model === 'dall-e-3';
+}
+
+function isDallE2Options(options: ImageGenerationOptions): options is DallE2Options {
+  return options.model === 'dall-e-2';
+}
+
 export interface ImageGenerationResult {
   response: OpenAI.Images.ImagesResponse;
   savedFiles: string[];
@@ -77,48 +93,7 @@ export class OpenAiProvider {
       console.error('Output path:', outputPath);
       
       const model = options.model;
-      
-      // Build parameters based on model type
-      let params: OpenAI.Images.ImageGenerateParams;
-      
-      if (model === "gpt-image-1" || model === "gpt-image-1-mini") {
-        const gptOptions = options as GptImage1Options | GptImage1MiniOptions;
-        params = {
-          model: model,
-          prompt: prompt,
-          n: gptOptions.n,
-          size: gptOptions.size,
-          quality: gptOptions.quality,
-          background: gptOptions.background,
-          moderation: gptOptions.moderation,
-          output_compression: gptOptions.output_compression,
-          output_format: gptOptions.output_format,
-          response_format: 'b64_json', // Always use base64 since we're saving to file
-          user: gptOptions.user,
-        } as OpenAI.Images.ImageGenerateParams;
-      } else if (model === "dall-e-3") {
-        const dalle3Options = options as DallE3Options;
-        params = {
-          model: 'dall-e-3',
-          prompt: prompt,
-          n: 1, // dall-e-3 only supports n=1
-          size: dalle3Options.size,
-          quality: dalle3Options.quality,
-          style: dalle3Options.style,
-          response_format: 'b64_json', // Always use base64 since we're saving to file
-          user: dalle3Options.user,
-        } as OpenAI.Images.ImageGenerateParams;
-      } else {
-        const dalle2Options = options as DallE2Options;
-        params = {
-          model: 'dall-e-2',
-          prompt: prompt,
-          n: dalle2Options.n,
-          size: dalle2Options.size,
-          response_format: 'b64_json', // Always use base64 since we're saving to file
-          user: dalle2Options.user,
-        } as OpenAI.Images.ImageGenerateParams;
-      }
+      const params = createImageGenerateParams(options, prompt);
       
       const response = await this.client.images.generate(params);
       
@@ -204,3 +179,52 @@ export class OpenAiProvider {
     return savedFiles;
   }
 }
+function createImageGenerateParams(options: ImageGenerationOptions, prompt: string) : OpenAI.Images.ImageGenerateParams {
+  if (isGptImage1Options(options) || isGptImage1MiniOptions(options)) {
+    return buildGptImageParams(options, prompt);
+  } else if (isDallE3Options(options)) {
+    return buildDalle3ImageParams(prompt, options);
+  } else {
+    return buildDalle2ImageParams(prompt, options);
+  }
+}
+
+function buildDalle2ImageParams(prompt: string, dalle2Options: DallE2Options): OpenAI.Images.ImageGenerateParams {
+  return {
+    model: 'dall-e-2',
+    prompt: prompt,
+    n: dalle2Options.n,
+    size: dalle2Options.size,
+    response_format: 'b64_json', // Always use base64 since we're saving to file
+    user: dalle2Options.user,
+  };
+}
+
+function buildDalle3ImageParams(prompt: string, dalle3Options: DallE3Options): OpenAI.Images.ImageGenerateParams {
+  return {
+    model: 'dall-e-3',
+    prompt: prompt,
+    n: 1, // dall-e-3 only supports n=1
+    size: dalle3Options.size,
+    quality: dalle3Options.quality,
+    style: dalle3Options.style,
+    response_format: 'b64_json', // Always use base64 since we're saving to file
+    user: dalle3Options.user,
+  } as OpenAI.Images.ImageGenerateParams;
+}
+
+function buildGptImageParams(options: GptImage1Options | GptImage1MiniOptions, prompt: string) : OpenAI.Images.ImageGenerateParams {
+  return {
+    model: options.model,
+    prompt: prompt,
+    n: options.n,
+    size: options.size,
+    quality: options.quality,
+    background: options.background,
+    moderation: options.moderation,
+    output_compression: options.output_compression,
+    output_format: options.output_format,
+    user: options.user,
+  } as OpenAI.Images.ImageGenerateParams;
+}
+
