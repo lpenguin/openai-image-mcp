@@ -66,7 +66,6 @@ function isDallE2Options(options: ImageGenerationOptions): options is DallE2Opti
 }
 
 export interface ImageGenerationResult {
-  response: OpenAI.Images.ImagesResponse;
   savedFiles: string[];
 }
 
@@ -109,7 +108,7 @@ export class OpenAiProvider {
       // Save images to disk
       const savedFiles = await this.saveImages(response, outputPath, model);
       
-      return { response, savedFiles };
+      return { savedFiles };
     } catch (error) {
       console.error('Error generating image:', (error as Error).message);
       if ((error as any).response) {
