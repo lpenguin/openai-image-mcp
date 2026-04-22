@@ -147,7 +147,7 @@ async function runTests(): Promise<void> {
     passedTests++;
 
     // Verify all expected tools are present
-    const expectedTools = ['generate_image_gpt', 'generate_image_gpt_mini', 'generate_image_dalle3', 'generate_image_dalle2'];
+    const expectedTools = ['generate_image_gpt', 'generate_image_gpt_mini', 'generate_image_gpt2', 'generate_image_gpt2_thinking', 'generate_image_dalle3', 'generate_image_dalle2'];
     for (const expectedTool of expectedTools) {
       if (!tools.some(t => t.name === expectedTool)) {
         console.log(`❌ Missing tool: ${expectedTool}\n`);

@@ -29,6 +29,25 @@ export interface GptImage1MiniOptions {
   user?: string;
 }
 
+// gpt-image-2 specific parameters
+// gpt-image-2 supports arbitrary resolutions (edges multiples of 16, <=3840px,
+// aspect <=3:1, total pixels 655,360-8,294,400). We accept any string and
+// surface the popular sizes in the tool schema. Note: per current docs,
+// `transparent` background is NOT supported on gpt-image-2.
+// `thinking` enables the reasoning-aware mode (low|medium|high).
+export interface GptImage2Options {
+  model: 'gpt-image-2';
+  n?: number;
+  size?: string; // e.g. '1024x1024', '2048x2048', '3840x2160', 'auto'
+  quality?: 'low' | 'medium' | 'high' | 'auto';
+  background?: 'opaque' | 'auto';
+  moderation?: 'low' | 'auto';
+  output_compression?: number; // 0-100
+  output_format?: 'png' | 'jpeg' | 'webp';
+  thinking?: 'low' | 'medium' | 'high';
+  user?: string;
+}
+
 // dall-e-3 specific parameters
 export interface DallE3Options {
   model: 'dall-e-3';
@@ -47,7 +66,7 @@ export interface DallE2Options {
   user?: string;
 }
 
-export type ImageGenerationOptions = GptImage1Options | GptImage1MiniOptions | DallE3Options | DallE2Options;
+export type ImageGenerationOptions = GptImage1Options | GptImage1MiniOptions | GptImage2Options | DallE3Options | DallE2Options;
 
 function isGptImage1Options(options: ImageGenerationOptions): options is GptImage1Options {
   return options.model === 'gpt-image-1';
@@ -55,6 +74,10 @@ function isGptImage1Options(options: ImageGenerationOptions): options is GptImag
 
 function isGptImage1MiniOptions(options: ImageGenerationOptions): options is GptImage1MiniOptions {
   return options.model === 'gpt-image-1-mini';
+}
+
+function isGptImage2Options(options: ImageGenerationOptions): options is GptImage2Options {
+  return options.model === 'gpt-image-2';
 }
 
 function isDallE3Options(options: ImageGenerationOptions): options is DallE3Options {
@@ -181,6 +204,8 @@ export class OpenAiProvider {
 function createImageGenerateParams(options: ImageGenerationOptions, prompt: string) : OpenAI.Images.ImageGenerateParams {
   if (isGptImage1Options(options) || isGptImage1MiniOptions(options)) {
     return buildGptImageParams(options, prompt);
+  } else if (isGptImage2Options(options)) {
+    return buildGptImage2Params(options, prompt);
   } else if (isDallE3Options(options)) {
     return buildDalle3ImageParams(prompt, options);
   } else {
@@ -225,5 +250,26 @@ function buildGptImageParams(options: GptImage1Options | GptImage1MiniOptions, p
     output_format: options.output_format,
     user: options.user,
   } as OpenAI.Images.ImageGenerateParams;
+}
+
+function buildGptImage2Params(options: GptImage2Options, prompt: string) : OpenAI.Images.ImageGenerateParams {
+  // Build base params; `thinking` is a gpt-image-2-specific field not yet in
+  // the OpenAI SDK types, so we attach it via an object spread and cast.
+  const params: Record<string, unknown> = {
+    model: options.model,
+    prompt: prompt,
+    n: options.n,
+    size: options.size,
+    quality: options.quality,
+    background: options.background,
+    moderation: options.moderation,
+    output_compression: options.output_compression,
+    output_format: options.output_format,
+    user: options.user,
+  };
+  if (options.thinking) {
+    params.thinking = options.thinking;
+  }
+  return params as unknown as OpenAI.Images.ImageGenerateParams;
 }
 
