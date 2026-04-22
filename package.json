@@ -16,7 +16,8 @@
     "start": "node dist/mcp-server.js",
     "dev": "tsc && node dist/mcp-server.js",
     "integration-test": "tsc && tsc -p tsconfig.integration.json && node dist/integration-test.js",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "prepare": "npm run build"
   },
   "keywords": [
     "mcp",
