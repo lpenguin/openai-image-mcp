@@ -8,7 +8,7 @@ import {
   McpError,
 } from '@modelcontextprotocol/sdk/types.js';
 import * as dotenv from 'dotenv';
-import { OpenAiProvider, ImageGenerationOptions } from './openai-provider.js';
+import { OpenAiProvider, ImageGenerationOptions, ImageEditOptions } from './openai-provider.js';
 import OpenAI from 'openai';
 
 // Load environment variables
@@ -373,6 +373,154 @@ class ImageGenerationServer {
           },
         },
         {
+          name: 'edit_image_gpt',
+          description: 'Edit or transform an existing image using OpenAI\'s gpt-image-1 model (image-to-image). Provide a source image file and a prompt describing the desired changes. Optionally supply a mask PNG to restrict edits to a specific region.',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              prompt: {
+                type: 'string',
+                description: 'A text description of the desired edits or transformation (max 32000 characters)',
+              },
+              image: {
+                type: 'string',
+                description: 'Absolute file path to the source image (PNG, JPEG, or WEBP)',
+              },
+              output: {
+                type: 'string',
+                description: 'File path where the edited image should be saved',
+              },
+              mask: {
+                type: 'string',
+                description: 'Absolute file path to an optional mask PNG. Transparent pixels indicate areas to edit; opaque pixels are preserved.',
+              },
+              n: {
+                type: 'integer',
+                description: 'Number of images to generate (1-10)',
+                minimum: 1,
+                maximum: 10,
+                default: 1,
+              },
+              size: {
+                type: 'string',
+                description: 'Size of the output image',
+                enum: ['1024x1024', '1536x1024', '1024x1536', 'auto'],
+                default: 'auto',
+              },
+              quality: {
+                type: 'string',
+                description: 'Quality of the generated image',
+                enum: ['low', 'medium', 'high', 'auto'],
+                default: 'auto',
+              },
+              background: {
+                type: 'string',
+                description: 'Background transparency setting',
+                enum: ['transparent', 'opaque', 'auto'],
+                default: 'auto',
+              },
+              moderation: {
+                type: 'string',
+                description: 'Content moderation level',
+                enum: ['low', 'auto'],
+                default: 'auto',
+              },
+              output_compression: {
+                type: 'integer',
+                description: 'Compression level (0-100) for webp/jpeg formats',
+                minimum: 0,
+                maximum: 100,
+                default: 100,
+              },
+              output_format: {
+                type: 'string',
+                description: 'Output image format',
+                enum: ['png', 'jpeg', 'webp'],
+                default: 'png',
+              },
+              user: {
+                type: 'string',
+                description: 'Unique identifier for your end-user (optional)',
+              },
+            },
+            required: ['prompt', 'image', 'output'],
+          },
+        },
+        {
+          name: 'edit_image_gpt_mini',
+          description: 'Edit or transform an existing image using OpenAI\'s gpt-image-1-mini model (image-to-image). Cost-efficient alternative to edit_image_gpt with the same parameters.',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              prompt: {
+                type: 'string',
+                description: 'A text description of the desired edits or transformation (max 32000 characters)',
+              },
+              image: {
+                type: 'string',
+                description: 'Absolute file path to the source image (PNG, JPEG, or WEBP)',
+              },
+              output: {
+                type: 'string',
+                description: 'File path where the edited image should be saved',
+              },
+              mask: {
+                type: 'string',
+                description: 'Absolute file path to an optional mask PNG. Transparent pixels indicate areas to edit; opaque pixels are preserved.',
+              },
+              n: {
+                type: 'integer',
+                description: 'Number of images to generate (1-10)',
+                minimum: 1,
+                maximum: 10,
+                default: 1,
+              },
+              size: {
+                type: 'string',
+                description: 'Size of the output image',
+                enum: ['1024x1024', '1536x1024', '1024x1536', 'auto'],
+                default: 'auto',
+              },
+              quality: {
+                type: 'string',
+                description: 'Quality of the generated image',
+                enum: ['low', 'medium', 'high', 'auto'],
+                default: 'auto',
+              },
+              background: {
+                type: 'string',
+                description: 'Background transparency setting',
+                enum: ['transparent', 'opaque', 'auto'],
+                default: 'auto',
+              },
+              moderation: {
+                type: 'string',
+                description: 'Content moderation level',
+                enum: ['low', 'auto'],
+                default: 'auto',
+              },
+              output_compression: {
+                type: 'integer',
+                description: 'Compression level (0-100) for webp/jpeg formats',
+                minimum: 0,
+                maximum: 100,
+                default: 100,
+              },
+              output_format: {
+                type: 'string',
+                description: 'Output image format',
+                enum: ['png', 'jpeg', 'webp'],
+                default: 'png',
+              },
+              user: {
+                type: 'string',
+                description: 'Unique identifier for your end-user (optional)',
+              },
+            },
+            required: ['prompt', 'image', 'output'],
+          },
+        },
+        {
           name: 'generate_image_dalle2',
           description: 'Generate an image using OpenAI\'s DALL-E 2 model and save it to a file. Fast and cost-effective option.',
           inputSchema: {
@@ -426,6 +574,10 @@ class ImageGenerationServer {
         return this.handleDalle3Generation(request.params.arguments);
       } else if (toolName === 'generate_image_dalle2') {
         return this.handleDalle2Generation(request.params.arguments);
+      } else if (toolName === 'edit_image_gpt') {
+        return this.handleGptImageEdit(request.params.arguments, 'gpt-image-1');
+      } else if (toolName === 'edit_image_gpt_mini') {
+        return this.handleGptImageEdit(request.params.arguments, 'gpt-image-1-mini');
       } else {
         throw new McpError(
           ErrorCode.MethodNotFound,
@@ -699,6 +851,63 @@ class ImageGenerationServer {
           {
             type: 'text',
             text: `Error generating image: ${(error as Error).message || 'Unknown error'}`,
+          },
+        ],
+        isError: true,
+      };
+    }
+  }
+
+  private async handleGptImageEdit(args: any, model: 'gpt-image-1' | 'gpt-image-1-mini') {
+    if (!args.prompt) {
+      throw new McpError(ErrorCode.InvalidParams, 'Prompt is required');
+    }
+    if (!args.image) {
+      throw new McpError(ErrorCode.InvalidParams, 'Image file path is required');
+    }
+    if (!args.output) {
+      throw new McpError(ErrorCode.InvalidParams, 'Output file path is required');
+    }
+
+    try {
+      const options: ImageEditOptions = {
+        model,
+        n: args.n,
+        size: args.size as any,
+        quality: args.quality as any,
+        background: args.background,
+        moderation: args.moderation,
+        output_compression: args.output_compression,
+        output_format: args.output_format,
+        user: args.user,
+      };
+
+      console.error(`Sending ${model} edit request to OpenAI`);
+      console.error('Prompt:', args.prompt);
+      console.error('Image:', args.image);
+      console.error('Output:', args.output);
+
+      const result = await this.openAiProvider.editImage(args.prompt, args.image, args.output, options, args.mask);
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({
+              success: true,
+              model,
+              savedFiles: result.savedFiles,
+            }, null, 2),
+          },
+        ],
+      };
+    } catch (error) {
+      console.error('Error editing image:', error);
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `Error editing image: ${(error as Error).message || 'Unknown error'}`,
           },
         ],
         isError: true,

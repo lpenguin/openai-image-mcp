@@ -68,6 +68,19 @@ export interface DallE2Options {
 
 export type ImageGenerationOptions = GptImage1Options | GptImage1MiniOptions | GptImage2Options | DallE3Options | DallE2Options;
 
+// Image editing options — supported by gpt-image-1 and gpt-image-1-mini via POST /v1/images/edits
+export interface ImageEditOptions {
+  model: 'gpt-image-1' | 'gpt-image-1-mini';
+  n?: number;
+  size?: '1024x1024' | '1536x1024' | '1024x1536' | 'auto';
+  quality?: 'low' | 'medium' | 'high' | 'auto';
+  background?: 'transparent' | 'opaque' | 'auto';
+  moderation?: 'low' | 'auto';
+  output_compression?: number;
+  output_format?: 'png' | 'jpeg' | 'webp';
+  user?: string;
+}
+
 function isGptImage1Options(options: ImageGenerationOptions): options is GptImage1Options {
   return options.model === 'gpt-image-1';
 }
@@ -134,6 +147,44 @@ export class OpenAiProvider {
       return { savedFiles };
     } catch (error) {
       console.error('Error generating image:', (error as Error).message);
+      if ((error as any).response) {
+        console.error('Error details:', JSON.stringify((error as any).response, null, 2));
+      }
+      throw error;
+    }
+  }
+
+  async editImage(prompt: string, imagePath: string, outputPath: string, options: ImageEditOptions, maskPath?: string): Promise<ImageGenerationResult> {
+    try {
+      console.error('OpenAI Provider - Editing image with options:', JSON.stringify(options, null, 2));
+      console.error('Prompt:', prompt);
+      console.error('Image path:', imagePath);
+      console.error('Output path:', outputPath);
+
+      const params: Record<string, unknown> = {
+        model: options.model,
+        image: fs.createReadStream(imagePath),
+        prompt,
+        n: options.n,
+        size: options.size,
+        quality: options.quality,
+        background: options.background,
+        moderation: options.moderation,
+        output_compression: options.output_compression,
+        output_format: options.output_format,
+        user: options.user,
+      };
+      if (maskPath) {
+        params.mask = fs.createReadStream(maskPath);
+      }
+
+      const response = await (this.client.images.edit as any)(params);
+      console.error('OpenAI Provider - Image edited successfully');
+
+      const savedFiles = await this.saveImages(response, outputPath, options.model);
+      return { savedFiles };
+    } catch (error) {
+      console.error('Error editing image:', (error as Error).message);
       if ((error as any).response) {
         console.error('Error details:', JSON.stringify((error as any).response, null, 2));
       }
