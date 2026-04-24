@@ -68,11 +68,16 @@ export interface DallE2Options {
 
 export type ImageGenerationOptions = GptImage1Options | GptImage1MiniOptions | GptImage2Options | DallE3Options | DallE2Options;
 
-// Image editing options — supported by gpt-image-1 and gpt-image-1-mini via POST /v1/images/edits
+// Image editing options — POST /v1/images/edits
+// Confirmed supported: dall-e-2 (requires RGBA or L/LA PNG, max 4MB)
+// Planned: gpt-image-1, gpt-image-1-mini (API support not yet available)
 export interface ImageEditOptions {
-  model: 'gpt-image-1' | 'gpt-image-1-mini';
+  model: 'dall-e-2' | 'gpt-image-1' | 'gpt-image-1-mini';
   n?: number;
-  size?: '1024x1024' | '1536x1024' | '1024x1536' | 'auto';
+  // dall-e-2 supports: 256x256, 512x512, 1024x1024
+  // gpt-image-1/mini support: 1024x1024, 1536x1024, 1024x1536, auto
+  size?: string;
+  // Note: quality, background, moderation, output_format are gpt-image-1 params only
   quality?: 'low' | 'medium' | 'high' | 'auto';
   background?: 'transparent' | 'opaque' | 'auto';
   moderation?: 'low' | 'auto';

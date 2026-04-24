@@ -373,8 +373,51 @@ class ImageGenerationServer {
           },
         },
         {
+          name: 'edit_image_dalle2',
+          description: 'Edit or transform an existing image using DALL-E 2 (image-to-image). The source image must be a square RGBA or grayscale PNG, max 4MB. Optionally supply a mask PNG where transparent pixels mark the region to edit.',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              prompt: {
+                type: 'string',
+                description: 'A text description of the desired edits (max 1000 characters)',
+              },
+              image: {
+                type: 'string',
+                description: 'Absolute file path to the source image. Must be a square RGBA or grayscale PNG, max 4MB.',
+              },
+              output: {
+                type: 'string',
+                description: 'File path where the edited image should be saved',
+              },
+              mask: {
+                type: 'string',
+                description: 'Absolute file path to an optional mask PNG. Transparent pixels indicate the region to edit; opaque pixels are preserved.',
+              },
+              n: {
+                type: 'integer',
+                description: 'Number of images to generate (1-10)',
+                minimum: 1,
+                maximum: 10,
+                default: 1,
+              },
+              size: {
+                type: 'string',
+                description: 'Size of the output image',
+                enum: ['256x256', '512x512', '1024x1024'],
+                default: '1024x1024',
+              },
+              user: {
+                type: 'string',
+                description: 'Unique identifier for your end-user (optional)',
+              },
+            },
+            required: ['prompt', 'image', 'output'],
+          },
+        },
+        {
           name: 'edit_image_gpt',
-          description: 'Edit or transform an existing image using OpenAI\'s gpt-image-1 model (image-to-image). Provide a source image file and a prompt describing the desired changes. Optionally supply a mask PNG to restrict edits to a specific region.',
+          description: 'Edit or transform an existing image using OpenAI\'s gpt-image-1 model (image-to-image). Note: gpt-image-1 edit support requires OpenAI to enable it on the /v1/images/edits endpoint; use edit_image_dalle2 in the meantime. Optionally supply a mask PNG to restrict edits to a specific region.',
           inputSchema: {
             type: 'object',
             properties: {
@@ -574,6 +617,8 @@ class ImageGenerationServer {
         return this.handleDalle3Generation(request.params.arguments);
       } else if (toolName === 'generate_image_dalle2') {
         return this.handleDalle2Generation(request.params.arguments);
+      } else if (toolName === 'edit_image_dalle2') {
+        return this.handleGptImageEdit(request.params.arguments, 'dall-e-2');
       } else if (toolName === 'edit_image_gpt') {
         return this.handleGptImageEdit(request.params.arguments, 'gpt-image-1');
       } else if (toolName === 'edit_image_gpt_mini') {
@@ -858,7 +903,7 @@ class ImageGenerationServer {
     }
   }
 
-  private async handleGptImageEdit(args: any, model: 'gpt-image-1' | 'gpt-image-1-mini') {
+  private async handleGptImageEdit(args: any, model: 'dall-e-2' | 'gpt-image-1' | 'gpt-image-1-mini') {
     if (!args.prompt) {
       throw new McpError(ErrorCode.InvalidParams, 'Prompt is required');
     }
