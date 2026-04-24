@@ -1,4 +1,4 @@
-import OpenAI from 'openai';
+import OpenAI, { toFile } from 'openai';
 import * as fs from 'fs';
 import * as path from 'path';
 import axios from 'axios';
@@ -68,6 +68,24 @@ export interface DallE2Options {
 
 export type ImageGenerationOptions = GptImage1Options | GptImage1MiniOptions | GptImage2Options | DallE3Options | DallE2Options;
 
+// Image editing options — POST /v1/images/edits
+// Supported models: gpt-image-2, gpt-image-1, gpt-image-1-mini, dall-e-2
+// For gpt-image-1/2: image must be PNG (RGB or RGBA), supplied via toFile() for correct MIME type
+// For dall-e-2: image must be square RGBA/grayscale PNG, max 4MB
+export interface ImageEditOptions {
+  model: 'gpt-image-2' | 'gpt-image-1' | 'gpt-image-1-mini' | 'dall-e-2';
+  n?: number;
+  // dall-e-2: 256x256, 512x512, 1024x1024 | gpt-image-1/2: 1024x1024, 1536x1024, 1024x1536, auto
+  size?: string;
+  // gpt-image-1/2 only params:
+  quality?: 'low' | 'medium' | 'high' | 'auto';
+  background?: 'transparent' | 'opaque' | 'auto';
+  moderation?: 'low' | 'auto';
+  output_compression?: number;
+  output_format?: 'png' | 'jpeg' | 'webp';
+  user?: string;
+}
+
 function isGptImage1Options(options: ImageGenerationOptions): options is GptImage1Options {
   return options.model === 'gpt-image-1';
 }
@@ -134,6 +152,56 @@ export class OpenAiProvider {
       return { savedFiles };
     } catch (error) {
       console.error('Error generating image:', (error as Error).message);
+      if ((error as any).response) {
+        console.error('Error details:', JSON.stringify((error as any).response, null, 2));
+      }
+      throw error;
+    }
+  }
+
+  async editImage(prompt: string, imagePath: string, outputPath: string, options: ImageEditOptions, maskPath?: string): Promise<ImageGenerationResult> {
+    try {
+      console.error('OpenAI Provider - Editing image with options:', JSON.stringify(options, null, 2));
+      console.error('Prompt:', prompt);
+      console.error('Image path:', imagePath);
+      console.error('Output path:', outputPath);
+
+      // gpt-image-1/2 require explicit MIME type via toFile(); dall-e-2 works with raw streams
+      const imageFile = await toFile(fs.createReadStream(imagePath), path.basename(imagePath), {
+        type: 'image/png',
+      });
+
+      const params: Record<string, unknown> = {
+        model: options.model,
+        image: imageFile,
+        prompt,
+        n: options.n,
+        size: options.size,
+        user: options.user,
+      };
+
+      // gpt-image-1/2 additional params (ignored by dall-e-2)
+      if (options.model !== 'dall-e-2') {
+        if (options.quality !== undefined) params.quality = options.quality;
+        if (options.background !== undefined) params.background = options.background;
+        if (options.moderation !== undefined) params.moderation = options.moderation;
+        if (options.output_compression !== undefined) params.output_compression = options.output_compression;
+        if (options.output_format !== undefined) params.output_format = options.output_format;
+      }
+
+      if (maskPath) {
+        params.mask = await toFile(fs.createReadStream(maskPath), path.basename(maskPath), {
+          type: 'image/png',
+        });
+      }
+
+      const response = await (this.client.images.edit as any)(params);
+      console.error('OpenAI Provider - Image edited successfully');
+
+      const savedFiles = await this.saveImages(response, outputPath, options.model);
+      return { savedFiles };
+    } catch (error) {
+      console.error('Error editing image:', (error as Error).message);
       if ((error as any).response) {
         console.error('Error details:', JSON.stringify((error as any).response, null, 2));
       }
