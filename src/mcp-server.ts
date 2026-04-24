@@ -197,6 +197,142 @@ class ImageGenerationServer {
           },
         },
         {
+          name: 'generate_image_gpt2',
+          description: 'Generate an image using OpenAI\'s gpt-image-2 model (released Apr 21, 2026). Supports flexible resolutions up to 3840px per edge, batch of up to 10 images, multilingual text rendering, and high-quality generation.',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              prompt: {
+                type: 'string',
+                description: 'A text description of the desired image',
+              },
+              output: {
+                type: 'string',
+                description: 'File path where the generated image should be saved (e.g., /path/to/image.png)',
+              },
+              n: {
+                type: 'integer',
+                description: 'Number of images to generate (1-10)',
+                minimum: 1,
+                maximum: 10,
+                default: 1,
+              },
+              size: {
+                type: 'string',
+                description: 'Size of the generated image. gpt-image-2 accepts any resolution where each edge is a multiple of 16, edges are <=3840px, aspect ratio <=3:1, and total pixels between 655,360 and 8,294,400. Popular sizes: 1024x1024, 1536x1024, 1024x1536, 2048x2048, 2048x1152, 3840x2160, 2160x3840, auto.',
+                default: 'auto',
+              },
+              quality: {
+                type: 'string',
+                description: 'Quality of the generated image',
+                enum: ['low', 'medium', 'high', 'auto'],
+                default: 'auto',
+              },
+              background: {
+                type: 'string',
+                description: 'Background setting. Note: gpt-image-2 does not support transparent backgrounds at this time.',
+                enum: ['opaque', 'auto'],
+                default: 'auto',
+              },
+              moderation: {
+                type: 'string',
+                description: 'Content moderation level',
+                enum: ['low', 'auto'],
+                default: 'auto',
+              },
+              output_compression: {
+                type: 'integer',
+                description: 'Compression level (0-100) for webp/jpeg formats',
+                minimum: 0,
+                maximum: 100,
+                default: 100,
+              },
+              output_format: {
+                type: 'string',
+                description: 'Output image format',
+                enum: ['png', 'jpeg', 'webp'],
+                default: 'png',
+              },
+              user: {
+                type: 'string',
+                description: 'Unique identifier for your end-user (optional)',
+              },
+            },
+            required: ['prompt', 'output'],
+          },
+        },
+        {
+          name: 'generate_image_gpt2_thinking',
+          description: 'Generate an image using OpenAI\'s gpt-image-2 model with reasoning-aware "thinking" mode enabled. Thinking mode trades latency for layout accuracy and is especially useful for infographics, diagrams, and text-heavy compositions. Accepts the same parameters as generate_image_gpt2 plus a thinking tier (low/medium/high).',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              prompt: {
+                type: 'string',
+                description: 'A text description of the desired image',
+              },
+              output: {
+                type: 'string',
+                description: 'File path where the generated image should be saved (e.g., /path/to/image.png)',
+              },
+              thinking: {
+                type: 'string',
+                description: 'Thinking mode tier. Higher tiers use more reasoning tokens and take longer but produce better layout accuracy.',
+                enum: ['low', 'medium', 'high'],
+                default: 'medium',
+              },
+              n: {
+                type: 'integer',
+                description: 'Number of images to generate (1-10)',
+                minimum: 1,
+                maximum: 10,
+                default: 1,
+              },
+              size: {
+                type: 'string',
+                description: 'Size of the generated image. Same constraints as generate_image_gpt2.',
+                default: 'auto',
+              },
+              quality: {
+                type: 'string',
+                description: 'Quality of the generated image',
+                enum: ['low', 'medium', 'high', 'auto'],
+                default: 'auto',
+              },
+              background: {
+                type: 'string',
+                description: 'Background setting. Note: gpt-image-2 does not support transparent backgrounds at this time.',
+                enum: ['opaque', 'auto'],
+                default: 'auto',
+              },
+              moderation: {
+                type: 'string',
+                description: 'Content moderation level',
+                enum: ['low', 'auto'],
+                default: 'auto',
+              },
+              output_compression: {
+                type: 'integer',
+                description: 'Compression level (0-100) for webp/jpeg formats',
+                minimum: 0,
+                maximum: 100,
+                default: 100,
+              },
+              output_format: {
+                type: 'string',
+                description: 'Output image format',
+                enum: ['png', 'jpeg', 'webp'],
+                default: 'png',
+              },
+              user: {
+                type: 'string',
+                description: 'Unique identifier for your end-user (optional)',
+              },
+            },
+            required: ['prompt', 'output'],
+          },
+        },
+        {
           name: 'generate_image_dalle3',
           description: 'Generate an image using OpenAI\'s DALL-E 3 model and save it to a file. Best quality and most advanced model with style control.',
           inputSchema: {
@@ -282,6 +418,10 @@ class ImageGenerationServer {
         return this.handleGptImageGeneration(request.params.arguments);
       } else if (toolName === 'generate_image_gpt_mini') {
         return this.handleGptImageMiniGeneration(request.params.arguments);
+      } else if (toolName === 'generate_image_gpt2') {
+        return this.handleGptImage2Generation(request.params.arguments, false);
+      } else if (toolName === 'generate_image_gpt2_thinking') {
+        return this.handleGptImage2Generation(request.params.arguments, true);
       } else if (toolName === 'generate_image_dalle3') {
         return this.handleDalle3Generation(request.params.arguments);
       } else if (toolName === 'generate_image_dalle2') {
@@ -384,6 +524,69 @@ class ImageGenerationServer {
             text: JSON.stringify({
               success: true,
               model: 'gpt-image-1-mini',
+              savedFiles: result.savedFiles,
+            }, null, 2),
+          },
+        ],
+      };
+    } catch (error) {
+      console.error('Error generating image:', error);
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `Error generating image: ${(error as Error).message || 'Unknown error'}`,
+          },
+        ],
+        isError: true,
+      };
+    }
+  }
+
+  private async handleGptImage2Generation(args: any, thinkingMode: boolean) {
+    // Validate required parameters
+    if (!args.prompt) {
+      throw new McpError(ErrorCode.InvalidParams, 'Prompt is required');
+    }
+    if (!args.output) {
+      throw new McpError(ErrorCode.InvalidParams, 'Output file path is required');
+    }
+
+    try {
+      // For the thinking tool, default to 'medium' if not provided.
+      // For the standard tool, do not pass `thinking` at all.
+      const thinking = thinkingMode
+        ? (args.thinking ?? 'medium')
+        : undefined;
+
+      const options: ImageGenerationOptions = {
+        model: 'gpt-image-2',
+        n: args.n,
+        size: args.size as any,
+        quality: args.quality as any,
+        background: args.background,
+        moderation: args.moderation,
+        output_compression: args.output_compression,
+        output_format: args.output_format,
+        thinking: thinking as any,
+        user: args.user,
+      };
+
+      const label = thinkingMode ? `gpt-image-2 (thinking=${thinking})` : 'gpt-image-2';
+      console.error(`Sending ${label} request to OpenAI`);
+      console.error('Prompt:', args.prompt);
+      console.error('Output:', args.output);
+
+      const result = await this.openAiProvider.generateImage(args.prompt, args.output, options);
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({
+              success: true,
+              model: 'gpt-image-2',
+              thinking: thinking ?? null,
               savedFiles: result.savedFiles,
             }, null, 2),
           },
