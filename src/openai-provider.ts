@@ -1,4 +1,4 @@
-import OpenAI from 'openai';
+import OpenAI, { toFile } from 'openai';
 import * as fs from 'fs';
 import * as path from 'path';
 import axios from 'axios';
@@ -69,15 +69,15 @@ export interface DallE2Options {
 export type ImageGenerationOptions = GptImage1Options | GptImage1MiniOptions | GptImage2Options | DallE3Options | DallE2Options;
 
 // Image editing options — POST /v1/images/edits
-// Confirmed supported: dall-e-2 (requires RGBA or L/LA PNG, max 4MB)
-// Planned: gpt-image-1, gpt-image-1-mini (API support not yet available)
+// Supported models: gpt-image-2, gpt-image-1, gpt-image-1-mini, dall-e-2
+// For gpt-image-1/2: image must be PNG (RGB or RGBA), supplied via toFile() for correct MIME type
+// For dall-e-2: image must be square RGBA/grayscale PNG, max 4MB
 export interface ImageEditOptions {
-  model: 'dall-e-2' | 'gpt-image-1' | 'gpt-image-1-mini';
+  model: 'gpt-image-2' | 'gpt-image-1' | 'gpt-image-1-mini' | 'dall-e-2';
   n?: number;
-  // dall-e-2 supports: 256x256, 512x512, 1024x1024
-  // gpt-image-1/mini support: 1024x1024, 1536x1024, 1024x1536, auto
+  // dall-e-2: 256x256, 512x512, 1024x1024 | gpt-image-1/2: 1024x1024, 1536x1024, 1024x1536, auto
   size?: string;
-  // Note: quality, background, moderation, output_format are gpt-image-1 params only
+  // gpt-image-1/2 only params:
   quality?: 'low' | 'medium' | 'high' | 'auto';
   background?: 'transparent' | 'opaque' | 'auto';
   moderation?: 'low' | 'auto';
@@ -166,21 +166,33 @@ export class OpenAiProvider {
       console.error('Image path:', imagePath);
       console.error('Output path:', outputPath);
 
+      // gpt-image-1/2 require explicit MIME type via toFile(); dall-e-2 works with raw streams
+      const imageFile = await toFile(fs.createReadStream(imagePath), path.basename(imagePath), {
+        type: 'image/png',
+      });
+
       const params: Record<string, unknown> = {
         model: options.model,
-        image: fs.createReadStream(imagePath),
+        image: imageFile,
         prompt,
         n: options.n,
         size: options.size,
-        quality: options.quality,
-        background: options.background,
-        moderation: options.moderation,
-        output_compression: options.output_compression,
-        output_format: options.output_format,
         user: options.user,
       };
+
+      // gpt-image-1/2 additional params (ignored by dall-e-2)
+      if (options.model !== 'dall-e-2') {
+        if (options.quality !== undefined) params.quality = options.quality;
+        if (options.background !== undefined) params.background = options.background;
+        if (options.moderation !== undefined) params.moderation = options.moderation;
+        if (options.output_compression !== undefined) params.output_compression = options.output_compression;
+        if (options.output_format !== undefined) params.output_format = options.output_format;
+      }
+
       if (maskPath) {
-        params.mask = fs.createReadStream(maskPath);
+        params.mask = await toFile(fs.createReadStream(maskPath), path.basename(maskPath), {
+          type: 'image/png',
+        });
       }
 
       const response = await (this.client.images.edit as any)(params);
