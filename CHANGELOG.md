@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.2.0](https://github.com/lpenguin/openai-image-mcp/compare/v1.1.3...v1.2.0) (2026-04-24)
+
+
+### Features
+
+* add gpt-image-2 support with standard and thinking-mode tools ([#9](https://github.com/lpenguin/openai-image-mcp/issues/9)) ([f149293](https://github.com/lpenguin/openai-image-mcp/commit/f149293ef80bccb520976d3d2f4fe6ea6d629dcd))
+
 ## [1.2.0-gpt2.0] (2026-04-22)
 
 ### Features
